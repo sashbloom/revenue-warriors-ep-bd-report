@@ -10,9 +10,12 @@ from the repository root (not from inside backend/), so that the
 
 import os
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.agents.rahul_domain.agents.revenue_warriors.routes import (
     router as revenue_warriors_router,
@@ -49,6 +52,11 @@ app.add_middleware(
 
 app.include_router(revenue_warriors_router)
 
+# The dispatch UI is a single static page served from this same origin, so
+# its API calls need no base URL and no CORS entry.
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 @app.get("/health")
 async def health():
@@ -56,10 +64,7 @@ async def health():
     return {"status": "ok"}
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 async def root():
-    return {
-        "service": "Revenue Warriors Backend",
-        "docs": "/docs",
-        "health": "/health",
-    }
+    """Serve the dispatch UI."""
+    return FileResponse(STATIC_DIR / "index.html")

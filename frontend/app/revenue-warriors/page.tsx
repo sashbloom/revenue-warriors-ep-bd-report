@@ -31,7 +31,9 @@ interface DraftInfo {
 
 // ── Constants ──
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://revenue-warriors-ep-bd-report-production.up.railway.app";
 
 const RECIPIENTS: Recipient[] = [
   { name: "Aditya Achalkar", type: "EP", sheet: "EP - Aditya Achalkar", email: "aditya.achalkar@practus.com" },

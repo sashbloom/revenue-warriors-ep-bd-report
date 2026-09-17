@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue Warriors Dispatch</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1a202c;
+    --muted: #64748b;
+    --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --ok: #15803d;
+    --ok-bg: #dcfce7;
+    --warn: #b45309;
+    --warn-bg: #fef3c7;
+    --err: #b91c1c;
+    --err-bg: #fee2e2;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1419; --surface: #1a212b; --border: #2d3748;
+      --text: #e8edf4; --muted: #94a3b8; --accent: #3b82f6;
+      --ok: #4ade80; --ok-bg: #14321f; --warn: #fbbf24; --warn-bg: #3a2c08;
+      --err: #f87171; --err-bg: #3b1518;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--bg); color: var(--text);
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 20px; }
+
+  .badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .badge.live { background: var(--ok-bg); color: var(--ok); }
+  .badge.dry  { background: var(--warn-bg); color: var(--warn); }
+  .badge.bad  { background: var(--err-bg); color: var(--err); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 14px; font-weight: 600; }
+
+  .drop {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 36px 20px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .drop strong { display: block; margin-bottom: 4px; }
+  .drop span { color: var(--muted); font-size: 13px; }
+
+  .fields { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .field { flex: 1 1 240px; }
+  label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+  input[type=text] {
+    width: 100%; padding: 8px 10px; font: inherit;
+    border: 1px solid var(--border); border-radius: 7px;
+    background: var(--bg); color: var(--text);
+  }
+  input[type=text]:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+  button {
+    font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); color: var(--accent-fg); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .spacer { flex: 1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .tag { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+  .addr { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; word-break: break-all; }
+  .st { font-size: 12px; font-weight: 600; }
+  .st.pending { color: var(--muted); }
+  .st.drafted { color: var(--accent); }
+  .st.sent { color: var(--ok); }
+  .st.failed { color: var(--err); }
+  .scroll { overflow-x: auto; }
+
+  .preview { border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; background: #fff; color: #1a202c; padding: 14px; max-height: 340px; overflow: auto; }
+  .preview table { font-size: 12px; }
+  details summary { cursor: pointer; color: var(--accent); font-size: 12px; font-weight: 600; user-select: none; }
+
+  #log { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; max-height: 180px; overflow: auto; white-space: pre-wrap; }
+  .note { padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; }
+  .note.warn { background: var(--warn-bg); color: var(--warn); }
+  .note.err { background: var(--err-bg); color: var(--err); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Revenue Warriors Dispatch</h1>
+    </div>
+    <span id="modeBadge" class="badge">checking…</span>
+  </header>
+  <p class="sub">Upload the weekly workbook, review each partner's report, then create and send drafts from Isabelle's mailbox.</p>
+
+  <div id="modeNote" class="note warn" hidden></div>
+
+  <!-- Step 1 -->
+  <section class="card">
+    <h2>1 &middot; Workbook</h2>
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose or drop a workbook">
+      <strong id="dropTitle">Drop the .xlsx workbook here</strong>
+      <span id="dropHint">or click to choose a file</span>
+    </div>
+    <input id="file" type="file" accept=".xlsx,.xls" hidden>
+
+    <div class="fields">
+      <div class="field">
+        <label for="week">Week label</label>
+        <input id="week" type="text" placeholder="auto-detected from workbook">
+        <div class="hint">Leave blank to use the week detected in the file.</div>
+      </div>
+      <div class="field">
+        <label for="cc">Additional CC</label>
+        <input id="cc" type="text" placeholder="comma-separated, optional">
+        <div class="hint">Standing CC recipients are added by the server automatically.</div>
+      </div>
+    </div>
+
+    <div class="actions" style="margin-top:14px">
+      <button id="parseBtn" class="primary" disabled>Parse workbook</button>
+      <span id="fileInfo" class="hint"></span>
+    </div>
+  </section>
+
+  <!-- Step 2 -->
+  <section id="step2" class="card" hidden>
+    <h2>2 &middot; Preview <span id="weekLabel" style="text-transform:none;letter-spacing:0"></span></h2>
+    <div class="scroll">
+      <table id="tbl">
+        <thead>
+          <tr>
+            <th style="width:30px"></th>
+            <th>Recipient</th>
+            <th>To / CC</th>
+            <th style="width:60px">Rows</th>
+            <th style="width:90px">Status</th>
+            <th style="width:150px">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="actions" style="margin-top:16px">
+      <button id="draftAll" class="primary">Create all drafts</button>
+      <button id="sendAll" disabled>Send all drafts</button>
+      <button id="deleteAll" disabled>Delete drafts</button>
+      <div class="spacer"></div>
+      <span id="counts" class="hint"></span>
+    </div>
+  </section>
+
+  <!-- Log -->
+  <section class="card">
+    <h2>Activity</h2>
+    <div id="log">Ready.</div>
+  </section>
+
+</div>
+
+<script>
+// Served from the same origin as the API, so no base URL is needed.
+const API = "";
+const EP = {
+  status:  API + "/rahul/revenue-warriors/status",
+  parse:   API + "/rahul/revenue-warriors/parse",
+  draft:   API + "/rahul/revenue-warriors/draft",
+  send:    API + "/rahul/revenue-warriors/send",
+  sendAll: API + "/rahul/revenue-warriors/send-all",
+};
+
+/** All email payloads come from the backend. Nothing about recipients,
+ *  CC lists or message bodies is defined in this page. */
+let emails = [];      // as returned by /parse
+let state = [];       // per-email: { status, messageId }
+let currentFile = null;
+
+const $ = (id) => document.getElementById(id);
+const log = (msg, kind) => {
+  const el = $("log");
+  const t = new Date().toLocaleTimeString();
+  el.textContent += `\n[${t}] ${msg}`;
+  el.scrollTop = el.scrollHeight;
+};
+
+// ── Mode banner ───────────────────────────────────────────
+async function loadStatus() {
+  const badge = $("modeBadge"), note = $("modeNote");
+  try {
+    const r = await fetch(EP.status);
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const s = await r.json();
+    if (!s.configured) {
+      badge.textContent = "DRY RUN";
+      badge.className = "badge dry";
+      note.hidden = false;
+      note.textContent = "Dry-run mode — nothing will be sent. Missing configuration: "
+        + (s.missing_vars || []).join(", ");
+    } else if (s.dry_run) {
+      badge.textContent = "DRY RUN";
+      badge.className = "badge dry";
+      note.hidden = false;
+      note.textContent = "Dry-run mode is forced on. Drafts and sends are simulated only.";
+    } else {
+      badge.textContent = "LIVE · " + (s.sender || "");
+      badge.className = "badge live";
+    }
+    log("Backend status: " + (s.dry_run ? "dry-run" : "live") + (s.sender ? " as " + s.sender : ""));
+  } catch (e) {
+    badge.textContent = "backend unreachable";
+    badge.className = "badge bad";
+    note.hidden = false;
+    note.className = "note err";
+    note.textContent = "Could not reach the backend: " + e.message;
+    log("Status check failed: " + e.message);
+  }
+}
+
+// ── Step 1: file selection ────────────────────────────────
+const drop = $("drop"), fileInput = $("file");
+
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
+});
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  if (e.dataTransfer.files[0]) pickFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", () => {
+  if (fileInput.files[0]) pickFile(fileInput.files[0]);
+});
+
+/** Local preflight with SheetJS: confirm it is a readable workbook and show
+ *  what is inside, before sending it to the server. The server still does
+ *  the authoritative parse. */
+async function pickFile(f) {
+  if (!/\.xlsx?$/i.test(f.name)) {
+    log("Not a .xlsx file: " + f.name);
+    alert("Please choose an .xlsx or .xls workbook.");
+    return;
+  }
+  currentFile = f;
+  $("dropTitle").textContent = f.name;
+  $("parseBtn").disabled = false;
+
+  try {
+    const buf = await f.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(buf), { type: "array", bookSheets: true });
+    const sheets = wb.SheetNames || [];
+    const epbd = sheets.filter((s) => /^(EP|BD) - /.test(s));
+    $("dropHint").textContent =
+      `${sheets.length} sheets · ${epbd.length} EP/BD sheets · ${(f.size / 1024).toFixed(0)} KB`;
+    $("fileInfo").textContent = epbd.length
+      ? "Looks like a Revenue Warriors workbook."
+      : "No EP/BD sheets found — the server may return no emails.";
+    log(`Loaded ${f.name}: ${sheets.length} sheets, ${epbd.length} EP/BD.`);
+  } catch (err) {
+    $("dropHint").textContent = "Could not read this file locally.";
+    $("fileInfo").textContent = "";
+    log("Local read failed (the server will still try): " + err.message);
+  }
+}
+
+// ── Step 2: parse on the server ───────────────────────────
+$("parseBtn").addEventListener("click", async () => {
+  if (!currentFile) return;
+  const btn = $("parseBtn");
+  btn.disabled = true;
+  btn.textContent = "Parsing…";
+
+  try {
+    const fd = new FormData();
+    fd.append("file", currentFile);
+    const qs = new URLSearchParams();
+    if ($("week").value.trim()) qs.set("week", $("week").value.trim());
+    if ($("cc").value.trim()) qs.set("cc", $("cc").value.trim());
+
+    const r = await fetch(EP.parse + (qs.toString() ? "?" + qs : ""), { method: "POST", body: fd });
+    if (!r.ok) throw new Error((await r.text()).slice(0, 200) || "HTTP " + r.status);
+
+    const data = await r.json();
+    emails = data.emails || [];
+    state = emails.map(() => ({ status: "pending", messageId: null }));
+
+    $("weekLabel").textContent = data.week ? "— " + data.week : "";
+    render();
+    $("step2").hidden = false;
+    log(`Server built ${emails.length} emails for ${data.week}.`);
+    $("step2").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    log("Parse failed: " + e.message);
+    alert("Parse failed: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Parse workbook";
+  }
+});
+
+// ── Rendering ─────────────────────────────────────────────
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function render() {
+  const tb = $("tbody");
+  tb.innerHTML = "";
+
+  emails.forEach((em, i) => {
+    const st = state[i];
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="tag">${esc(em.type)}</span></td>
+      <td>
+        <div><strong>${esc(em.name)}</strong></div>
+        <div class="hint">${esc(em.subject)}</div>
+        <details>
+          <summary>Preview email</summary>
+          <div class="preview">${em.body_html || ""}</div>
+        </details>
+      </td>
+      <td>
+        <div class="addr">${(em.to || []).map(esc).join(", ")}</div>
+        <div class="addr hint">cc: ${(em.cc || []).length ? (em.cc).map(esc).join(", ") : "—"}</div>
+      </td>
+      <td>${em.row_count ?? ""}</td>
+      <td><span class="st ${st.status}" data-st="${i}">${st.status}</span></td>
+      <td class="actions" data-act="${i}"></td>`;
+    tb.appendChild(tr);
+    renderActions(i);
+  });
+  updateCounts();
+}
+
+function renderActions(i) {
+  const cell = document.querySelector(`[data-act="${i}"]`);
+  if (!cell) return;
+  const st = state[i];
+  cell.innerHTML = "";
+
+  if (st.status === "pending" || st.status === "failed") {
+    const b = document.createElement("button");
+    b.textContent = "Draft";
+    b.onclick = () => createDraft(i);
+    cell.appendChild(b);
+  } else if (st.status === "drafted") {
+    const b = document.createElement("button");
+    b.textContent = "Send";
+    b.className = "primary";
+    b.onclick = () => sendOne(i);
+    cell.appendChild(b);
+  } else if (st.status === "sent") {
+    cell.innerHTML = '<span class="hint">done</span>';
+  }
+}
+
+function setStatus(i, status) {
+  state[i].status = status;
+  const el = document.querySelector(`[data-st="${i}"]`);
+  if (el) { el.textContent = status; el.className = "st " + status; }
+  renderActions(i);
+  updateCounts();
+}
+
+function updateCounts() {
+  const n = (s) => state.filter((x) => x.status === s).length;
+  $("counts").textContent =
+    `${emails.length} emails · ${n("drafted")} drafted · ${n("sent")} sent` +
+    (n("failed") ? ` · ${n("failed")} failed` : "");
+  $("sendAll").disabled = n("drafted") === 0;
+  $("deleteAll").disabled = n("drafted") === 0;
+  $("draftAll").disabled = state.every((x) => x.status !== "pending" && x.status !== "failed");
+}
+
+// ── Step 3: drafts and sending ────────────────────────────
+async function createDraft(i) {
+  const em = emails[i];
+  setStatus(i, "working");
+  try {
+    const r = await fetch(EP.draft, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Sent back exactly as the server built it.
+      body: JSON.stringify({ to: em.to, cc: em.cc, subject: em.subject, body_html: em.body_html }),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    state[i].messageId = d.message_id;
+    setStatus(i, "drafted");
+    log(`Draft created for ${em.name}${d.dry_run ? " (dry-run)" : ""}.`);
+  } catch (e) {
+    setStatus(i, "failed");
+    log(`Draft failed for ${em.name}: ${e.message}`);
+  }
+}
+
+async function sendOne(i) {
+  const em = emails[i];
+  if (!state[i].messageId) return;
+  setStatus(i, "working");
+  try {
+    const r = await fetch(EP.send, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message_id: state[i].messageId }),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    setStatus(i, "sent");
+    log(`Sent to ${em.name}${d.dry_run ? " (dry-run)" : ""}.`);
+  } catch (e) {
+    setStatus(i, "failed");
+    log(`Send failed for ${em.name}: ${e.message}`);
+  }
+}
+
+$("draftAll").addEventListener("click", async () => {
+  const btn = $("draftAll");
+  btn.disabled = true;
+  for (let i = 0; i < emails.length; i++) {
+    if (state[i].status === "pending" || state[i].status === "failed") await createDraft(i);
+  }
+  updateCounts();
+});
+
+$("sendAll").addEventListener("click", async () => {
+  const ids = state.filter((s) => s.status === "drafted").map((s) => s.messageId);
+  if (!ids.length) return;
+  if (!confirm(`Send ${ids.length} email${ids.length > 1 ? "s" : ""} from Isabelle's mailbox? This cannot be undone.`)) return;
+
+  const btn = $("sendAll");
+  btn.disabled = true;
+  btn.textContent = "Sending…";
+  try {
+    const r = await fetch(EP.sendAll, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message_ids: ids }),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const d = await r.json();
+    const okIds = new Set(d.results.filter((x) => x.status === "sent").map((x) => x.message_id));
+    state.forEach((s, i) => {
+      if (s.status === "drafted") setStatus(i, okIds.has(s.messageId) ? "sent" : "failed");
+    });
+    log(`Send all: ${d.sent}/${d.total} sent${d.dry_run ? " (dry-run)" : ""}.`);
+  } catch (e) {
+    log("Send all failed: " + e.message);
+  } finally {
+    btn.textContent = "Send all drafts";
+    updateCounts();
+  }
+});
+
+$("deleteAll").addEventListener("click", async () => {
+  const targets = state.map((s, i) => [s, i]).filter(([s]) => s.status === "drafted");
+  if (!targets.length) return;
+  if (!confirm(`Delete ${targets.length} unsent draft${targets.length > 1 ? "s" : ""}?`)) return;
+
+  for (const [s, i] of targets) {
+    try {
+      const r = await fetch(EP.draft, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message_id: s.messageId }),
+      });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      state[i].messageId = null;
+      setStatus(i, "pending");
+    } catch (e) {
+      log(`Delete failed for ${emails[i].name}: ${e.message}`);
+    }
+  }
+  log("Drafts deleted.");
+});
+
+loadStatus();
+</script>
+</body>
+</html>

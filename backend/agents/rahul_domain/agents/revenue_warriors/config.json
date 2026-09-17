@@ -1,0 +1,25 @@
+{
+  "cc_emails": [
+    "rahul.jaiswal@roibypractus.com",
+    "Venkataraman.S@roibypractus.com"
+  ],
+  "recipients": [
+    {"name": "Aditya Achalkar",        "type": "EP", "sheet": "EP - Aditya Achalkar",        "email": "aditya.achalkar@roibypractus.com"},
+    {"name": "Ameya Waingankar",       "type": "EP", "sheet": "EP - Ameya Waingankar",       "email": "ameya.waingankar@roibypractus.com"},
+    {"name": "Foram Maru",             "type": "EP", "sheet": "EP - Foram Maru",              "email": "foram.maru@roibypractus.com"},
+    {"name": "Shashank Silhare",       "type": "EP", "sheet": "EP - Shashank Silhare",       "email": "shashank.silhare@roibypractus.com"},
+    {"name": "Yashwin Pamecha",        "type": "EP", "sheet": "EP - Yashwin Pamecha",        "email": "yashwin.pamecha@roibypractus.com"},
+    {"name": "Varun Shankarnarayan",   "type": "EP", "sheet": "EP - Varun Shankarnarayan",   "email": "varun.shankarnarayan@roibypractus.com"},
+    {"name": "Sharan Prakash",         "type": "EP", "sheet": "EP - Sharan Prakash",         "email": "sharan.prakash@roibypractus.com"},
+    {"name": "Priyanka Baram",         "type": "EP", "sheet": "EP - Priyanka Baram",         "email": "priyanka.baram@roibypractus.com"},
+    {"name": "Rajaram Ganesan",        "type": "EP", "sheet": "EP - Rajaram Ganesan",        "email": "rajaram.ganesan@roibypractus.com"},
+    {"name": "Ravikanth Rao",          "type": "EP", "sheet": "EP - Ravikanth Rao",          "email": "ravikanth.rao@roibypractus.com"},
+    {"name": "Bhavik Desai",           "type": "BD", "sheet": "BD - Bhavik Desai",           "email": "bhavik.desai@roibypractus.com"},
+    {"name": "Deepak Narayanan",       "type": "BD", "sheet": "BD - Deepak Narayanan",       "email": "deepak.narayanan@roibypractus.com"},
+    {"name": "Priyanka Baram",         "type": "BD", "sheet": "BD - Priyanka Baram",         "email": "priyanka.baram@roibypractus.com"},
+    {"name": "Rajaram Ganesan",        "type": "BD", "sheet": "BD - Rajaram Ganesan",        "email": "rajaram.ganesan@roibypractus.com"},
+    {"name": "Ravikanth Rao",          "type": "BD", "sheet": "BD - Ravikanth Rao",          "email": "ravikanth.rao@roibypractus.com"},
+    {"name": "Sreejit Nair",           "type": "BD", "sheet": "BD - Sreejit Nair",           "email": "sreejit.nair@roibypractus.com"},
+    {"name": "Srinivasan Venkataraman","type": "BD", "sheet": "BD - Srinivasan Venkataraman","email": "srinivasan.venkataraman@roibypractus.com"}
+  ]
+}

@@ -1,1 +1,8 @@
--r backend/requirements.txt
+fastapi
+uvicorn
+python-multipart
+pydantic
+python-dotenv
+msal
+requests
+openpyxl
